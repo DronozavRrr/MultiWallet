@@ -8,7 +8,7 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.core.window import Window
-from WorkWithDB import create_table, transfer_in_array, add_new_key, dell_key
+from WorkWithDB import create_table, transfer_in_array, add_new_key, dell_key,delete_all
 import requests
 from web3 import Web3
 
@@ -21,6 +21,61 @@ global wallets
 wallets = transfer_in_array()
 global layout
 global popup_add_private_key
+
+w3 = Web3(Web3.HTTPProvider("https://arbitrum.drpc.org"))
+current_wallet = str()
+
+class CryptoWork:
+    def get_eth_price_from_bybit(self):
+        response = requests.get('https://api.bybit.com/derivatives/v3/public/tickers?symbol=ETHUSDT&limit=1')
+        return (response.json()['result']['list'][0]['lastPrice'])
+
+    def get_eth_balance_from_wallet(self, private_key, rpc):
+        w3 = Web3(Web3.HTTPProvider(rpc))
+        account = w3.eth.account.from_key(private_key)
+        address = account.address
+        balance = w3.eth.get_balance(address)
+        return balance
+
+    def get_address_from_private_key(self, private_key, rpc):
+        w3 = Web3(Web3.HTTPProvider(rpc))
+        account = w3.eth.account.from_key(private_key)
+        address = account.address
+        return address
+
+    def send_eth(self, key_from, address_to, eth_amount):
+        web3 = Web3(Web3.HTTPProvider("https://arbitrum.drpc.org"))
+        account = web3.eth.account.from_key(private_key=key_from)
+        nonce = web3.eth.get_transaction_count(account.address, 'pending')
+        gas_estimate = web3.eth.estimate_gas({
+            'to': address_to,
+            'value': web3.to_wei(eth_amount, 'ether'),
+        })
+
+        transaction = {
+            'nonce': nonce,  # Добавляем nonce сюда
+            'to': address_to,
+            'value': web3.to_wei(eth_amount, 'ether'),
+            'gas': gas_estimate,
+            'gasPrice': web3.eth.gas_price,
+        }
+
+        print(web3.from_wei(transaction['gas'],'ether'))
+        signed_txn = web3.eth.account.sign_transaction(transaction, key_from)
+
+        txn_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+
+        return txn_hash.hex()
+
+
+    # scan - example - etherscan,arbiscan
+    # address - кошелек для которого нужно сканить
+    # api_key - брал для арбитрума, для эфира не тестил
+    def get_transactions_history(self, scan, address, api_key='272WETQQ4WRRUVBINPZRXBWPRE2G4G4SE8'):
+        response = requests.get(
+            f'https://api.{scan}.io/api?module=account&action=txlist&address={address}&startblock=0&endblock=latest&sort=asc&page=1&offset=10&apikey={api_key}')
+        # потом обработать транзакции
+        return response.json()['result']
 
 
 class WalletsCatalog(App):
@@ -56,10 +111,16 @@ class WalletsCatalog(App):
         self.wallet_input = value
 
     def on_add_button_press(self, instance):
-        add_new_key(self.wallet_input)
-        wallets.append(self.wallet_input)
-        self.refresh_table()
-        self.popup_add_private_key.dismiss()
+        try:
+            account = w3.eth.account.from_key(self.wallet_input)
+
+            add_new_key(account.address)
+            if(account and account.address):
+                wallets.append(account.address)
+                self.refresh_table()
+                self.popup_add_private_key.dismiss()
+        except Exception as e:
+            print("Ошибка при создании аккаунта:", e)
 
     def build(self):
         main_layout = BoxLayout(spacing=10, orientation='vertical')
@@ -85,71 +146,74 @@ class WalletsCatalog(App):
         print('')
 
     def on_wallet_click(self, instance):
+        global current_wallet
+        current_wallet = instance.text
         self.stop()
-        WalletManager().run()
+        CryptoWalletApp().run()
+
+class CryptoWalletPage(GridLayout):
+    MainApp = None
+    def __init__(self,App, **kwargs):
+        self.MainApp = App
+        super().__init__(**kwargs)
+        test = CryptoWork()
+        cur_balance = test.get_eth_balance_from_wallet()
+        self.cols = 1  # Один столбец для всех элементов
+        self.padding = 10
+        self.spacing = 10  # Добавим небольшой отступ между элементами
+
+        # Создание и настройка кнопки "Назад"
+        self.back_button = Button(text="Назад", size_hint=(None, None), size=(100, 50))
+        self.back_button.bind(on_press=self.on_back_button_pressed)  # Привязываем функцию к нажатию кнопки
+
+        # Обернем кнопку "Назад" в AnchorLayout для позиционирования в левом верхнем углу
+        back_button_layout = AnchorLayout(anchor_x='left', anchor_y='top')
+        back_button_layout.add_widget(self.back_button)
+
+        # Создание и настройка виджета, содержащего информацию о балансе и переводе
+        balance_layout = GridLayout(cols=2)  # Два столбца для текста и значений
+
+        self.balance_label = Label(text="Баланс:", size_hint=(None, None), size=(150, 50), valign='middle', halign='right')
+        balance_layout.add_widget(self.balance_label)
+
+        self.balance_value = Label(text="10.00 ETH", size_hint=(None, None), size=(150, 50), valign='middle', halign='center')
+        balance_layout.add_widget(self.balance_value)
+
+        self.transfer_label = Label(text="Перевод:", size_hint=(None, None), size=(150, 50), valign='middle', halign='right')
+        balance_layout.add_widget(self.transfer_label)
+
+        self.transfer_value = Label(text="$100.00", size_hint=(None, None), size=(150, 50), valign='middle', halign='center')
+        balance_layout.add_widget(self.transfer_value)
+
+        # Создание и настройка кнопки "Отправить"
+        self.send_button = Button(text="Отправить", size_hint=(None, None), size=(100, 50), valign='middle', halign='center')
+
+        # Обернем кнопку "Отправить" в AnchorLayout для центрирования
+        send_button_layout = AnchorLayout(anchor_x='center', anchor_y='center')
+        send_button_layout.add_widget(self.send_button)
+
+        # Добавляем все виджеты на страницу
+        self.add_widget(back_button_layout)
+        self.add_widget(balance_layout)
+        self.add_widget(send_button_layout)
+
+    # Функция обработки нажатия кнопки "Назад"
+    def on_back_button_pressed(self, instance):
+        self.MainApp.stop()
+        WalletsCatalog().run()
+        print("Button 'Назад' pressed")
 
 
-class WalletManager(App):
+class CryptoWalletApp(App):
     def build(self):
-        label = Label(text="TEST")
-        return label
+        Window.size = (350, 600)
+        return CryptoWalletPage(self)
+
+
 
 
 if __name__ == "__main__":
     WalletsCatalog().run()
 
-# class CryptoWork:
-#     def get_eth_price_from_bybit(self):
-#         response = requests.get('https://api.bybit.com/derivatives/v3/public/tickers?symbol=ETHUSDT&limit=1')
-#         return (response.json()['result']['list'][0]['lastPrice'])
-#
-#     def get_eth_balance_from_wallet(self, private_key, rpc):
-#         w3 = Web3(Web3.HTTPProvider(rpc))
-#         account = w3.eth.account.from_key(private_key)
-#         address = account.address
-#         balance = w3.eth.get_balance(address)
-#         return balance
-#
-#     def get_address_from_private_key(self, private_key, rpc):
-#         w3 = Web3(Web3.HTTPProvider(rpc))
-#         account = w3.eth.account.from_key(private_key)
-#         address = account.address
-#         return address
-#
-#     def send_eth(self, key_from, address_to, eth_amount):
-#         web3 = Web3(Web3.HTTPProvider("https://arbitrum.drpc.org"))
-#         account = web3.eth.account.from_key(private_key=key_from)
-#         nonce = web3.eth.get_transaction_count(account.address, 'pending')
-#         gas_estimate = web3.eth.estimate_gas({
-#             'to': address_to,
-#             'value': web3.to_wei(eth_amount, 'ether'),
-#         })
-#
-#         transaction = {
-#             'nonce': nonce,  # Добавляем nonce сюда
-#             'to': address_to,
-#             'value': web3.to_wei(eth_amount, 'ether'),
-#             'gas': gas_estimate,
-#             'gasPrice': web3.eth.gas_price,
-#         }
-#
-#         print(web3.from_wei(transaction['gas'],'ether'))
-#         signed_txn = web3.eth.account.sign_transaction(transaction, key_from)
-#
-#         txn_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-#
-#         return txn_hash.hex()
-#
-#
-#     # scan - example - etherscan,arbiscan
-#     # address - кошелек для которого нужно сканить
-#     # api_key - брал для арбитрума, для эфира не тестил
-#     def get_transactions_history(self, scan, address, api_key='272WETQQ4WRRUVBINPZRXBWPRE2G4G4SE8'):
-#         response = requests.get(
-#             f'https://api.{scan}.io/api?module=account&action=txlist&address={address}&startblock=0&endblock=latest&sort=asc&page=1&offset=10&apikey={api_key}')
-#         # потом обработать транзакции
-#         return response.json()['result']
-#
-# test = CryptoWork()
-#
-# print(test.send_eth("043197848fd07c11cc5b6649a6756aa5fe4f22090c1e38b69cdb14d9fcb84f73","0x8500d1bff3D261F11E48d1A5F83eF08735e80B09",0.00000001))
+
+
