@@ -5,7 +5,6 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.popup import Popup
 from kivy.uix.textinput import TextInput
-from kivy.uix.stacklayout import StackLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.core.window import Window
@@ -25,70 +24,65 @@ global popup_add_private_key
 
 
 class WalletsCatalog(App):
-    test = str()
-    popup_add_private_key = Popup()
-    layout = GridLayout(cols=1, spacing=10, size_hint_y=None)
-    layout.bind(minimum_height=layout.setter('height'))
+    def __init__(self, **kwargs):
+        super(WalletsCatalog, self).__init__(**kwargs)
+        self.wallet_input = str()
+        self.popup_add_private_key = None
+        self.wallet_layout = GridLayout(cols=1, spacing=10, size_hint_y=None)
+        self.wallet_layout.bind(minimum_height=self.wallet_layout.setter('height'))
+
     def refresh_table(self):
-        self.layout.clear_widgets()
+        self.wallet_layout.clear_widgets()
         for wallet in wallets:
             button = Button(text=wallet, size_hint=(1, None), height=40,
                             background_color=(50 / 255, 205 / 255, 50 / 255, 1))
-            self.layout.bind(on_press=self.on_wallet_click)
-            self.layout.add_widget(button)
+            button.bind(on_press=self.on_wallet_click)
+            self.wallet_layout.add_widget(button)
+
+    def create_popup_add_private_key(self):
+        content = BoxLayout(orientation='vertical', spacing=10)
+        text_input_layout = AnchorLayout(anchor_y='top')
+        content.add_widget(text_input_layout)
+        text_input = TextInput(text='close_key', size_hint=(1, 0.2))
+        text_input.bind(text=self.on_text_input)
+        text_input_layout.add_widget(text_input)
+        button_add = Button(text="ADD", size_hint=(1, 0.2))
+        button_add.bind(on_press=self.on_add_button_press)
+        content.add_widget(button_add)
+        self.popup_add_private_key = Popup(title='Enter close key',
+                                            size_hint=(0.7, 0.5), content=content)
+
+    def on_text_input(self, instance, value):
+        self.wallet_input = value
+
+    def on_add_button_press(self, instance):
+        add_new_key(self.wallet_input)
+        wallets.append(self.wallet_input)
+        self.refresh_table()
+        self.popup_add_private_key.dismiss()
 
     def build(self):
-        def on_text(instance, value):
-            self.test = value
-
-        def dialog_add(instance):
-            add_new_key(self.test)
-            wallets.append(self.test)
-            self.refresh_table()
-            self.popup_add_private_key.dismiss()
-
-
-
-        def callback_add(self):
-            Mainlayout = BoxLayout(orientation='vertical', spacing=10)
-            TextInputLayout = AnchorLayout(anchor_y='top')
-            Mainlayout.add_widget((TextInputLayout))
-            textinput = TextInput(text='close_key', size_hint=(1, 0.2))
-            textinput.bind(text=on_text)
-
-            TextInputLayout.add_widget((textinput))
-            Button1 = Button(text="ADD", size_hint=(1, 0.2))
-            Button1.bind(on_press=dialog_add)
-
-            Mainlayout.add_widget(Button1)  # реализовать по нажатии на кнопку добавление в бд
-
-            self.popup_add_private_key = Popup(title='Enter close key',
-                          size_hint=(0.7, 0.5), content=Mainlayout)
-            self.popup_add_private_key.open()
-
-
-
-        def callback_dell(self):
-            print('')
-
-        Mainlayout = BoxLayout(spacing=10, orientation='vertical')
+        main_layout = BoxLayout(spacing=10, orientation='vertical')
         self.refresh_table()
-
         scrollview = ScrollView(size_hint=(1, 7), size=(Window.width, Window.height))
-        scrollview.add_widget(self.layout)
-        Mainlayout.add_widget(scrollview)
-        BottomLayout = BoxLayout(spacing=10, orientation='horizontal')
-
+        scrollview.add_widget(self.wallet_layout)
+        main_layout.add_widget(scrollview)
+        bottom_layout = BoxLayout(spacing=10, orientation='horizontal')
         button_add = Button(text="ADD")
-        button_add.bind(on_press=callback_add)
-        BottomLayout.add_widget(button_add)
-
+        button_add.bind(on_press=self.show_popup_add_private_key)
+        bottom_layout.add_widget(button_add)
         button_dell = Button(text="DELL")
-        button_dell.bind(on_press=callback_dell)
-        BottomLayout.add_widget(button_dell)
+        button_dell.bind(on_press=self.on_dell_button_press)
+        bottom_layout.add_widget(button_dell)
+        main_layout.add_widget(bottom_layout)
+        return main_layout
 
-        Mainlayout.add_widget(BottomLayout)
-        return Mainlayout
+    def show_popup_add_private_key(self, instance):
+        self.create_popup_add_private_key()
+        self.popup_add_private_key.open()
+
+    def on_dell_button_press(self, instance):
+        print('')
 
     def on_wallet_click(self, instance):
         self.stop()
