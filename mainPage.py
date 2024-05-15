@@ -1,60 +1,65 @@
-# import tkinter as tk
-# from PIL import Image, ImageTk
-#
-# class CryptoWalletPage(tk.Tk):
-#     def __init__(self):
-#         super().__init__()
-#
-#         width=350
-#         height=600
-#         # Set the window size
-#         self.geometry("350x600")
-#
-#         self.title("Crypto Wallet")
-#         self.configure(background="white")
-#
-#         # Create the logo
-#         self.logo = Image.open("logo.png")
-#         self.logo = self.logo.resize((70, 70))
-#         self.logo = ImageTk.PhotoImage(self.logo)
-#         self.logo_label = tk.Label(self, image=self.logo, bg="white")
-#         self.logo_label.grid(row=0, column=0, padx=0, pady=0, sticky="ne")
-#
-#
-#         self.back_button = tk.Button(self, text="Back", height=2, width=10)
-#         self.back_button.grid(row=0, column=0, padx=0, pady=10, sticky="nw")
-#
-#         # Create the wallet address label
-#         self.wallet_address_label = tk.Label(self, text="Wallet Address: 0x1234567890123456789012345678901234567890", font=("Helvetica", 10), wraplength=300, padx=10, pady=5, bg="white")
-#         self.wallet_address_label.grid(row=1, column=0, padx=10, pady=5)
-#
-#         # Create the balance label
-#         self.balance_label = tk.Label(self, text="Balance: 10.00 ETH", font=("Helvetica", 14), wraplength=300, padx=10, pady=5, bg="white")
-#         self.balance_label.grid(row=2, column=0, padx=10, pady=5)
-#
-#         # Create the transfer label
-#         self.transfer_label = tk.Label(self, text="Transfer: $100.00", font=("Helvetica", 14), wraplength=300, padx=10, pady=5, bg="white")
-#         self.transfer_label.grid(row=3, column=0, padx=10, pady=5)
-#
-#         # Create the send button
-#         self.send_button = tk.Button(self, text="Send", height=3, width=20)
-#         self.send_button.grid(row=4, column=0, padx=10, pady=5)
-#
-#         # Create the transaction history label
-#         self.transaction_history_label = tk.Label(self, text="Transaction History:", font=("Helvetica", 14), bg="white")
-#         self.transaction_history_label.grid(row=5, column=0, padx=10, pady=50)
-#
-#         # Create the transaction history listbox
-#         self.transaction_history_listbox = tk.Listbox(self, bg="white")
-#         self.transaction_history_listbox.grid(row=100, column=0, padx=10, pady=5, columnspan=2, sticky="ew")
-#
-#         # Add some sample transaction history
-#         self.transaction_history_listbox.insert(tk.END, "Transaction 1: 5.00 ETH sent to 0x1234567890123456789012345678901234567890")
-#         self.transaction_history_listbox.insert(tk.END, "Transaction 2: 2.00 ETH received from 0x1234567890123456789012345678901234567890")
-#         self.transaction_history_listbox.insert(tk.END, "Transaction 3: 3.00 ETH sent to 0x1234567890123456789012345678901234567890")
-#
-# # Create the crypto wallet page
-# crypto_wallet_page = CryptoWalletPage()
-#
-# # Run the Tkinter event loop
-# crypto_wallet_page.mainloop()
+from kivy.app import App
+from kivy.uix.anchorlayout import AnchorLayout
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.label import Label
+from kivy.uix.button import Button
+from kivy.core.window import Window
+
+
+class CryptoWalletPage(GridLayout):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.cols = 1  # Один столбец для всех элементов
+        self.padding = 10
+        self.spacing = 10  # Добавим небольшой отступ между элементами
+
+        # Создание и настройка кнопки "Назад"
+        self.back_button = Button(text="Назад", size_hint=(None, None), size=(100, 50))
+        self.back_button.bind(on_press=self.on_back_button_pressed)  # Привязываем функцию к нажатию кнопки
+
+        # Обернем кнопку "Назад" в AnchorLayout для позиционирования в левом верхнем углу
+        back_button_layout = AnchorLayout(anchor_x='left', anchor_y='top')
+        back_button_layout.add_widget(self.back_button)
+
+        # Создание и настройка виджета, содержащего информацию о балансе и переводе
+        balance_layout = GridLayout(cols=2)  # Два столбца для текста и значений
+
+        self.balance_label = Label(text="Баланс:", size_hint=(None, None), size=(150, 50), valign='middle', halign='right')
+        balance_layout.add_widget(self.balance_label)
+
+        self.balance_value = Label(text="10.00 ETH", size_hint=(None, None), size=(150, 50), valign='middle', halign='center')
+        balance_layout.add_widget(self.balance_value)
+
+        self.transfer_label = Label(text="Перевод:", size_hint=(None, None), size=(150, 50), valign='middle', halign='right')
+        balance_layout.add_widget(self.transfer_label)
+
+        self.transfer_value = Label(text="$100.00", size_hint=(None, None), size=(150, 50), valign='middle', halign='center')
+        balance_layout.add_widget(self.transfer_value)
+
+        # Создание и настройка кнопки "Отправить"
+        self.send_button = Button(text="Отправить", size_hint=(None, None), size=(100, 50), valign='middle', halign='center')
+
+        # Обернем кнопку "Отправить" в AnchorLayout для центрирования
+        send_button_layout = AnchorLayout(anchor_x='center', anchor_y='center')
+        send_button_layout.add_widget(self.send_button)
+
+        # Добавляем все виджеты на страницу
+        self.add_widget(back_button_layout)
+        self.add_widget(balance_layout)
+        self.add_widget(send_button_layout)
+
+    # Функция обработки нажатия кнопки "Назад"
+    def on_back_button_pressed(self, instance):
+        print("Button 'Назад' pressed")
+
+
+class CryptoWalletApp(App):
+    def build(self):
+        # Устанавливаем размер окна
+        Window.size = (350, 600)
+        return CryptoWalletPage()
+
+
+# Запуск приложения
+if __name__ == "__main__":
+    CryptoWalletApp().run()
