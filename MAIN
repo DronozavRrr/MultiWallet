@@ -86,9 +86,11 @@ class WalletsCatalog(App):
         self.wallet_layout = GridLayout(cols=1, spacing=10, size_hint_y=None)
         self.wallet_layout.bind(minimum_height=self.wallet_layout.setter('height'))
 
-    def refresh_table(self):
+    def refresh_table(self): # выход - из бд тянуть строчки с адресами и вставлять
         self.wallet_layout.clear_widgets()
+        w3 = Web3(Web3.HTTPProvider("https://arbitrum.drpc.org"))
         for wallet in wallets:
+            account = w3.eth.account.from_key(wallet)
             button = Button(text=wallet, size_hint=(1, None), height=40,
                             background_color=(50 / 255, 205 / 255, 50 / 255, 1))
             button.bind(on_press=self.on_wallet_click)
@@ -112,12 +114,23 @@ class WalletsCatalog(App):
 
     def on_add_button_press(self, instance):
         try:
-            account = w3.eth.account.from_key(self.wallet_input)
-
-            add_new_key(account.address)
+            try:
+                account = w3.eth.account.from_key(self.wallet_input)
+            except Exception as e:
+                print("Ошибка при создании аккаунта 1 :", e)
+            print(f'1 step {self.wallet_input}')
+            try:
+                add_new_key(self.wallet_input)
+            except Exception as e:
+                print("Ошибка при создании аккаунта2 :", e)
             if(account and account.address):
                 wallets.append(account.address)
-                self.refresh_table()
+                print(f'2 step {account.address}')
+                try:
+                    self.refresh_table()
+                except Exception as e:
+                    print("Ошибка при создании аккаунта3:", e)
+
                 self.popup_add_private_key.dismiss()
         except Exception as e:
             print("Ошибка при создании аккаунта:", e)
