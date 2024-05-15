@@ -9,6 +9,7 @@ from kivy.uix.stacklayout import StackLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.core.window import Window
+from WorkWithDB import create_table, transfer_in_array, add_new_key, dell_key
 import requests
 from web3 import Web3
 
@@ -16,42 +17,65 @@ Window.size = (350, 600)
 Window.clearcolor = (10 / 255, 10 / 255, 10 / 255, 1)
 Window.title = "MultiWallet"
 
-wallets = ["0x1i3ohdfsiah832749edifdaisjf", "0xjnjiasdcg743gid23ijr4bh", "oxfhsaidhfyg23ty427342372",
-           "0x1i3ohdfsiah832749edifdaisjf", "0xjnjiasdcg743gid23ijr4bh", "oxfhsaidhfyg23ty427342372",
-           "0x1i3ohdfsiah832749edifdaisjf", "0xjnjiasdcg743gid23ijr4bh", "oxfhsaidhfyg23ty427342372",
-           "0x1i3ohdfsiah832749edifdaisjf", "0xjnjiasdcg743gid23ijr4bh", "oxfhsaidhfyg23ty427342372",
-           "0x1i3ohdfsiah832749edifdaisjf", "0xjnjiasdcg743gid23ijr4bh", "oxfhsaidhfyg23ty427342372",
-           "0x1i3ohdfsiah832749edifdaisjf", "0xjnjiasdcg743gid23ijr4bh", "oxfhsaidhfyg23ty427342372"]
+create_table()
+global wallets
+wallets = transfer_in_array()
+global layout
+global popup_add_private_key
 
 
 class WalletsCatalog(App):
+    test = str()
+    popup_add_private_key = Popup()
+    layout = GridLayout(cols=1, spacing=10, size_hint_y=None)
+    layout.bind(minimum_height=layout.setter('height'))
+    def refresh_table(self):
+        self.layout.clear_widgets()
+        for wallet in wallets:
+            button = Button(text=wallet, size_hint=(1, None), height=40,
+                            background_color=(50 / 255, 205 / 255, 50 / 255, 1))
+            self.layout.bind(on_press=self.on_wallet_click)
+            self.layout.add_widget(button)
+
     def build(self):
+        def on_text(instance, value):
+            self.test = value
+
+        def dialog_add(instance):
+            add_new_key(self.test)
+            wallets.append(self.test)
+            self.refresh_table()
+            self.popup_add_private_key.dismiss()
+
+
+
         def callback_add(self):
             Mainlayout = BoxLayout(orientation='vertical', spacing=10)
             TextInputLayout = AnchorLayout(anchor_y='top')
-            TextInputLayout.add_widget(TextInput(text='close_key', size_hint=(1, 0.2)))
             Mainlayout.add_widget((TextInputLayout))
-            Mainlayout.add_widget(Button(text="ADD", size_hint=(1, 0.2),
-                                         on_press=None))  # реализовать по нажатии на кнопку добавление в бд
+            textinput = TextInput(text='close_key', size_hint=(1, 0.2))
+            textinput.bind(text=on_text)
 
-            popup = Popup(title='Enter close key',
-                          size_hint=(0.7, 0.5), auto_dismiss=True, content=Mainlayout)
+            TextInputLayout.add_widget((textinput))
+            Button1 = Button(text="ADD", size_hint=(1, 0.2))
+            Button1.bind(on_press=dialog_add)
 
-            popup.open()
+            Mainlayout.add_widget(Button1)  # реализовать по нажатии на кнопку добавление в бд
+
+            self.popup_add_private_key = Popup(title='Enter close key',
+                          size_hint=(0.7, 0.5), content=Mainlayout)
+            self.popup_add_private_key.open()
+
+
 
         def callback_dell(self):
             print('')
 
         Mainlayout = BoxLayout(spacing=10, orientation='vertical')
-        layout = GridLayout(cols=1, spacing=10, size_hint_y=None)
-        layout.bind(minimum_height=layout.setter('height'))
-        for wallet in wallets:
-            button = Button(text=wallet, size_hint=(1, None), height=40,
-                            background_color=(50 / 255, 205 / 255, 50 / 255, 1))
-            layout.bind(on_press=self.on_wallet_click)
-            layout.add_widget(button)
+        self.refresh_table()
+
         scrollview = ScrollView(size_hint=(1, 7), size=(Window.width, Window.height))
-        scrollview.add_widget(layout)
+        scrollview.add_widget(self.layout)
         Mainlayout.add_widget(scrollview)
         BottomLayout = BoxLayout(spacing=10, orientation='horizontal')
 
@@ -80,53 +104,58 @@ class WalletManager(App):
 if __name__ == "__main__":
     WalletsCatalog().run()
 
-
-class CryptoWork:
-    def get_eth_price_from_bybit(self):
-        response = requests.get('https://api.bybit.com/derivatives/v3/public/tickers?symbol=ETHUSDT&limit=1')
-        return (response.json()['result']['list'][0]['lastPrice'])
-
-    def get_eth_balance_from_wallet(self, private_key, rpc):
-        w3 = Web3(Web3.HTTPProvider(rpc))
-        account = w3.eth.account.from_key(private_key)
-        address = account.address
-        balance = w3.eth.get_balance(address)
-        return balance
-
-    def get_address_from_private_key(self, private_key, rpc):
-        w3 = Web3(Web3.HTTPProvider(rpc))
-        account = w3.eth.account.from_key(private_key)
-        address = account.address
-        return address
-
-    def send_eth(self, key_from, address_to, eth_amount, rpc):
-        w3 = Web3(Web3.HTTPProvider(rpc))
-        account = w3.eth.account.from_key(private_key=key_from)
-        tx_params = {
-            'chainId': w3.eth.chain_id,
-            'gasPrice': w3.eth.gas_price,
-            'nonce': w3.eth.get_transaction_count(account.address),
-            'from': account.address,
-            'to': address_to,
-            'value': eth_amount
-        }
-        tx_params['gas'] = w3.eth.estimate_gas(tx_params)
-
-        sign = w3.eth.account.sign_transaction(tx_params, account.key)
-        tx = w3.eth.send_raw_transaction(sign.rawTransaction)
-
-        tx_data = w3.eth.wait_for_transaction_receipt(tx, timeout=200)
-
-        if 'status' in tx_data and tx_data['status'] == 1:
-            print(f'transaction was successful: {tx.hex()}')
-        else:
-            print(f'transaction failed {tx_data["transactionHash"].hex()}')
-
-    # scan - example - etherscan,arbiscan
-    # address - кошелек для которого нужно сканить
-    # api_key - брал для арбитрума, для эфира не тестил
-    def get_transactions_history(self, scan, address, api_key='272WETQQ4WRRUVBINPZRXBWPRE2G4G4SE8'):
-        response = requests.get(
-            f'https://api.{scan}.io/api?module=account&action=txlist&address={address}&startblock=0&endblock=latest&sort=asc&page=1&offset=10&apikey={api_key}')
-        # потом обработать транзакции
-        return response.json()['result']
+# class CryptoWork:
+#     def get_eth_price_from_bybit(self):
+#         response = requests.get('https://api.bybit.com/derivatives/v3/public/tickers?symbol=ETHUSDT&limit=1')
+#         return (response.json()['result']['list'][0]['lastPrice'])
+#
+#     def get_eth_balance_from_wallet(self, private_key, rpc):
+#         w3 = Web3(Web3.HTTPProvider(rpc))
+#         account = w3.eth.account.from_key(private_key)
+#         address = account.address
+#         balance = w3.eth.get_balance(address)
+#         return balance
+#
+#     def get_address_from_private_key(self, private_key, rpc):
+#         w3 = Web3(Web3.HTTPProvider(rpc))
+#         account = w3.eth.account.from_key(private_key)
+#         address = account.address
+#         return address
+#
+#     def send_eth(self, key_from, address_to, eth_amount):
+#         web3 = Web3(Web3.HTTPProvider("https://arbitrum.drpc.org"))
+#         account = web3.eth.account.from_key(private_key=key_from)
+#         nonce = web3.eth.get_transaction_count(account.address, 'pending')
+#         gas_estimate = web3.eth.estimate_gas({
+#             'to': address_to,
+#             'value': web3.to_wei(eth_amount, 'ether'),
+#         })
+#
+#         transaction = {
+#             'nonce': nonce,  # Добавляем nonce сюда
+#             'to': address_to,
+#             'value': web3.to_wei(eth_amount, 'ether'),
+#             'gas': gas_estimate,
+#             'gasPrice': web3.eth.gas_price,
+#         }
+#
+#         print(web3.from_wei(transaction['gas'],'ether'))
+#         signed_txn = web3.eth.account.sign_transaction(transaction, key_from)
+#
+#         txn_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+#
+#         return txn_hash.hex()
+#
+#
+#     # scan - example - etherscan,arbiscan
+#     # address - кошелек для которого нужно сканить
+#     # api_key - брал для арбитрума, для эфира не тестил
+#     def get_transactions_history(self, scan, address, api_key='272WETQQ4WRRUVBINPZRXBWPRE2G4G4SE8'):
+#         response = requests.get(
+#             f'https://api.{scan}.io/api?module=account&action=txlist&address={address}&startblock=0&endblock=latest&sort=asc&page=1&offset=10&apikey={api_key}')
+#         # потом обработать транзакции
+#         return response.json()['result']
+#
+# test = CryptoWork()
+#
+# print(test.send_eth("043197848fd07c11cc5b6649a6756aa5fe4f22090c1e38b69cdb14d9fcb84f73","0x8500d1bff3D261F11E48d1A5F83eF08735e80B09",0.00000001))
