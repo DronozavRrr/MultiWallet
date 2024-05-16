@@ -40,9 +40,9 @@ class CryptoWork:
         w3 = Web3(Web3.HTTPProvider(rpc))
         account = w3.eth.account.from_key(private_key)
         address = account.address
-        balance = w3.eth.get_balance(address)
-        return balance
-
+        balance_wei = w3.eth.get_balance(address)
+        balance_eth = w3.from_wei(balance_wei, 'ether')  # Преобразование из wei в эфиры
+        return balance_eth
     def get_address_from_private_key(self, private_key, rpc):
         w3 = Web3(Web3.HTTPProvider(rpc))
         account = w3.eth.account.from_key(private_key)
@@ -183,7 +183,8 @@ class CryptoWalletPage(GridLayout):
         self.cols = 1  # Один столбец для всех элементов
         self.padding = 10
         self.spacing = 10  # Добавим небольшой отступ между элементами
-
+        test = CryptoWork()
+        print(f" балансик  - {test.get_eth_balance_from_wallet(current_wallet, "https://arbitrum.drpc.org")})")
         # Создание и настройка кнопки "Назад"
         self.back_button = Button(text="Назад", size_hint=(None, None), size=(100, 50))
         self.back_button.bind(on_press=self.on_back_button_pressed)  # Привязываем функцию к нажатию кнопки
