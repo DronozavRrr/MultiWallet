@@ -184,7 +184,6 @@ class CryptoWalletPage(GridLayout):
         self.padding = 10
         self.spacing = 10  # Добавим небольшой отступ между элементами
         test = CryptoWork()
-        print(f" балансик  - {test.get_eth_balance_from_wallet(current_wallet, "https://arbitrum.drpc.org")})")
         # Создание и настройка кнопки "Назад"
         self.back_button = Button(text="Назад", size_hint=(None, None), size=(100, 50))
         self.back_button.bind(on_press=self.on_back_button_pressed)  # Привязываем функцию к нажатию кнопки
@@ -194,23 +193,17 @@ class CryptoWalletPage(GridLayout):
         back_button_layout.add_widget(self.back_button)
 
         # Создание и настройка виджета, содержащего информацию о балансе и переводе
-        balance_layout = GridLayout(cols=2)  # Два столбца для текста и значений
+        balance_layout = GridLayout(cols=1)  # Два столбца для текста и значений
 
-        self.balance_label = Label(text="Баланс:", size_hint=(None, None), size=(150, 50), valign='middle',
-                                   halign='right')
+        self.balance_label = Label(text=f"{"{:.10f}".format(test.get_eth_balance_from_wallet(current_wallet, "https://arbitrum.drpc.org"))} ETH", size_hint=(None, None), size=(150, 50), valign='middle',
+                                   halign='center')
         balance_layout.add_widget(self.balance_label)
 
-        self.balance_value = Label(text="10.00 ETH", size_hint=(None, None), size=(150, 50), valign='middle',
-                                   halign='center')
-        balance_layout.add_widget(self.balance_value)
-
-        self.transfer_label = Label(text="Перевод:", size_hint=(None, None), size=(150, 50), valign='middle',
-                                    halign='right')
+        self.transfer_label = Label(text=f"{(float(test.get_eth_balance_from_wallet(current_wallet, "https://arbitrum.drpc.org")) * float(test.get_eth_price_from_bybit()))}$", size_hint=(None, None), size=(150, 50), valign='middle',
+                                    halign='auto')
         balance_layout.add_widget(self.transfer_label)
 
-        self.transfer_value = Label(text="$100.00", size_hint=(None, None), size=(150, 50), valign='middle',
-                                    halign='center')
-        balance_layout.add_widget(self.transfer_value)
+
 
         # Создание и настройка кнопки "Отправить"
         self.send_button = Button(text="Отправить", size_hint=(None, None), size=(100, 50), valign='middle',
