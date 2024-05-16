@@ -25,8 +25,6 @@ print(private_keys)
 wallets = transfer_in_array_address()
 global layout
 global popup_add_private_key
-print(f"key - {get_key_on_address("0x8500d1bff3D261F11E48d1A5F83eF08735e80B09")}")
-print(f"address - {get_address_on_key("043197848fd07c11cc5b6649a6756aa5fe4f22090c1e38b69cdb14d9fcb84f73")}")
 w3 = Web3(Web3.HTTPProvider("https://arbitrum.drpc.org"))
 current_wallet = str()
 
@@ -43,6 +41,7 @@ class CryptoWork:
         balance_wei = w3.eth.get_balance(address)
         balance_eth = w3.from_wei(balance_wei, 'ether')  # Преобразование из wei в эфиры
         return balance_eth
+
     def get_address_from_private_key(self, private_key, rpc):
         w3 = Web3(Web3.HTTPProvider(rpc))
         account = w3.eth.account.from_key(private_key)
@@ -195,15 +194,19 @@ class CryptoWalletPage(GridLayout):
         # Создание и настройка виджета, содержащего информацию о балансе и переводе
         balance_layout = GridLayout(cols=1)  # Два столбца для текста и значений
 
-        self.balance_label = Label(text=f"{"{:.10f}".format(test.get_eth_balance_from_wallet(current_wallet, "https://arbitrum.drpc.org"))} ETH", size_hint=(None, None), size=(150, 50), valign='middle',
-                                   halign='center')
+        self.balance_label = Label(
+            text=f"{'{:.10f}'.format(test.get_eth_balance_from_wallet(current_wallet, 'https://arbitrum.drpc.org'))} ETH",
+            size_hint=(None, None), size=(150, 50), valign='middle',
+            halign='center')
         balance_layout.add_widget(self.balance_label)
 
-        self.transfer_label = Label(text=f"{(float(test.get_eth_balance_from_wallet(current_wallet, "https://arbitrum.drpc.org")) * float(test.get_eth_price_from_bybit()))}$", size_hint=(None, None), size=(150, 50), valign='middle',
-                                    halign='auto')
+        get_balance = (float(test.get_eth_balance_from_wallet(current_wallet, "https://arbitrum.drpc.org")) * float(test.get_eth_price_from_bybit()))
+
+        self.transfer_label = Label(
+            text=f"{get_balance}$",
+            size_hint=(None, None), size=(150, 50), valign='middle',
+            halign='auto')
         balance_layout.add_widget(self.transfer_label)
-
-
 
         # Создание и настройка кнопки "Отправить"
         self.send_button = Button(text="Отправить", size_hint=(None, None), size=(100, 50), valign='middle',
