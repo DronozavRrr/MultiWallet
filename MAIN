@@ -20,9 +20,9 @@ Window.title = "MultiWallet"
 create_table()
 global wallets
 global private_keys
-private_keys = transfer_in_array_address()
+private_keys = transfer_in_array()
 print(private_keys)
-wallets = transfer_in_array()
+wallets = transfer_in_array_address()
 global layout
 global popup_add_private_key
 print(f"key - {get_key_on_address("0x8500d1bff3D261F11E48d1A5F83eF08735e80B09")}")
@@ -168,7 +168,8 @@ class WalletsCatalog(App):
 
     def on_wallet_click(self, instance):
         global current_wallet
-        current_wallet = instance.text
+        current_wallet = get_key_on_address(instance.text)
+        print(current_wallet)
         self.stop()
         CryptoWalletApp().run()
 
@@ -179,8 +180,6 @@ class CryptoWalletPage(GridLayout):
     def __init__(self, App, **kwargs):
         self.MainApp = App
         super().__init__(**kwargs)
-        test = CryptoWork()
-        cur_balance = test.get_eth_balance_from_wallet()
         self.cols = 1  # Один столбец для всех элементов
         self.padding = 10
         self.spacing = 10  # Добавим небольшой отступ между элементами
