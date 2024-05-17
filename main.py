@@ -17,6 +17,16 @@ from kivymd.uix.dialog import MDDialog
 from kivymd.uix.snackbar import Snackbar
 from kivymd.uix.selectioncontrol import MDCheckbox
 
+
+from kivymd.app import MDApp
+from kivy.uix.image import Image, AsyncImage
+from kivy.uix.button import Button
+from kivy.core.window import Window
+from kivy.clock import Clock
+from kivymd.uix.toolbar import MDTopAppBar
+from kivy.uix.floatlayout import FloatLayout
+
+
 from WorkWithDB import create_table, transfer_in_array, add_new_key, dell_key, delete_all, transfer_in_array_address, \
     get_key_on_address, get_address_on_key
 import requests
@@ -37,6 +47,7 @@ global layout
 global popup_add_private_key
 w3 = Web3(Web3.HTTPProvider("https://arbitrum.drpc.org"))
 current_wallet = str()
+sm = MDScreenManager()
 
 
 class CryptoWork:
@@ -152,7 +163,7 @@ class WalletsCatalog(MDScreen):
         content = MDBoxLayout(orientation='vertical', spacing=10)
         text_input_layout = MDAnchorLayout(anchor_y='top')
         content.add_widget(text_input_layout)
-        # text_input = MDTextInput(text='close_key', size_hint=(1, 0.2))
+        # text_input = MDMDTextField(text='close_key', size_hint=(1, 0.2))
         # text_input.bind(text=self.on_text_input)
         # text_input_layout.add_widget(text_input)
         # button_add = MDButton(text="ADD", size_hint=(1, 0.2))
@@ -299,78 +310,226 @@ class WalletsCatalog(MDScreen):
         self.delete_dialog.dismiss()  # Закрыть диалоговое окно после выполнения действий
         self.delete_dialog = None
 
-
+    # В классе WalletsCatalog, метод on_wallet_click
 
     def on_wallet_click(self, instance):
         global current_wallet
         current_wallet = get_key_on_address(instance.text)
-        print(current_wallet)
-        self.stop()
-        CryptoWalletApp().run()
+        print(current_wallet, " On wallet")  # Убедитесь, что current_wallet устанавливается правильно
+        sm.current = "cryptowalletpage"
 
 
 # #######
 
+
+#####
+
+# class SendMoneyApp(MDScreen):
+#     def __init__(self, **kwargs):
+#         super().__init__(**kwargs)
+#
+#         layout = MDGridLayout(cols=1, padding=10)
+#         layout.add_widget(self.address_textfield)
+#         layout.add_widget(self.amount_textfield)
+#         if not self.add_dialog:
+#             self.dialog = MDDialog(
+#                 title="Private Key:",
+#                 type="custom",
+#                 content_cls=layout,
+#
+#                 buttons=[
+#                     MDFillRoundFlatButton(
+#                         text="SEND", on_release=self.send_button_pressed
+#                     ),
+#                     MDFillRoundFlatButton(
+#                         text="CANCEL", on_release=self.cancel_button_pressed
+#                     ),
+#                 ],
+#             )
+#
+#     def on_entry_click(self, instance, value):
+#         if value:
+#             if instance.text == 'Sending Address:':
+#                 instance.text = ''
+#
+#     def on_focusout(self, instance, value):
+#         if not value and instance.text.strip() == '':
+#             instance.text = 'Sending Address:'
+#
+#     def on_entry_click_amount_sending(self, instance, value):
+#         if value:
+#             if instance.text == 'Amount Sending:':
+#                 instance.text = ''
+#
+#     def on_focusout_amount_sending(self, instance, value):
+#         if not value and instance.text.strip() == '':
+#             instance.text = 'Amount Sending:'
+#
+#     def send_money(self, instance):
+#         sending_address = self.entry_sending_address.text
+#         amount_sending = self.entry_amount_sending.text
+#         amount_commission = self.entry_amount_commission.text
+#
+#         if not sending_address.startswith("0x"):
+#             print("not 0x")
+#             return False
+#
+#         if len(sending_address) != 42:
+#             print("not 42")
+#             return False
+#
+#         if not all(c in "0123456789abcdefABCDEF" for c in sending_address[2:]):
+#             print("not 0123456789abcdefABCDEF")
+#             return False
+#
+#         data = {
+#             "sending_address": sending_address,
+#             "amount_sending": amount_sending,
+#             "amount_commission": amount_commission
+#         }
+#
+#         # Отправляем данные на сервер
+#         # response = requests.post("http://example.com/send_money", data=data)
+#         #
+#         # # Печатаем ответ сервера
+#         # print(response.text)
+#         return data
+#
+#     def get_eth_gas_price_in_wei(self):
+#         try:
+#             etherscan_api_url = f"https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey=YourApiKeyToken"
+#             response = requests.get(etherscan_api_url)
+#
+#             if response.status_code == 200:
+#                 gas_price_data = response.json()
+#                 if gas_price_data['status'] == '1':
+#                     gas_price_in_wei = int(gas_price_data['result']['SafeGasPrice'])
+#                     return gas_price_in_wei
+#                 else:
+#                     print("Ошибка при получении данных о цене газа:", gas_price_data['message'])
+#                     return None
+#             else:
+#                 print("Ошибка при отправке запроса к Etherscan API")
+#                 return None
+#         except Exception as e:
+#             print("Произошла ошибка:", e)
+#             return None
+#
+#     def convert_gas_to_eth(self, gas_price_in_wei):
+#         if gas_price_in_wei is not None:
+#             gas_price_in_eth = gas_price_in_wei / 10 ** 9 * 21000  # Поменять на 200000 в Arb
+#             gas_price_in_eth = round(gas_price_in_eth, 7)
+#             formatted_gas_price = "{:.7f}".format(gas_price_in_eth)
+#             print(f"Текущая средняя цена газа: {formatted_gas_price} ETH")
+#             self.entry_amount_commission.text = "Fee: " + str(formatted_gas_price) + " ETH"
+#
+#     def perform_actions(self, dt):
+#         gas_price_in_wei = self.get_eth_gas_price_in_wei()
+#         self.convert_gas_to_eth(gas_price_in_wei)
+#         Clock.schedule_once(self.perform_actions, 10)  # Вызываем perform_actions() каждые 5 секунд
+
+
 class CryptoWalletPage(MDScreen):
+    dialog = None
+    amount_textfield = None
+    address_textfield = None
+    balance_value = None
+    transfer_value = None
+    test = CryptoWork()
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+        self.address_textfield = MDTextField(hint_text="Enter address")
+        self.amount_textfield = MDTextField(hint_text="Enter amount")
+
         main_layout = MDGridLayout(cols=1, padding=10, spacing=10)
 
-        # Создание и настройка кнопки "Назад"
-        # .back_button = Button(text="Назад", size_hint=(None, None), size=(100, 50), background_color=(1, 0.5, 0, 1))
-        back_button = MDFillRoundFlatButton(MDTextButton(text="Back"), size_hint=(None, None), size=(100, 50))
-        back_button.bind(on_press=self.on_back_button_pressed)  # Привязываем функцию к нажатию кнопки
+        toolbar = MDTopAppBar(title="DronozavRR")
+        toolbar.left_action_items = [
+            ["arrow-left", lambda x: self.on_back_button_pressed()],
+             ["email", lambda x: self.on_send_press()]
+        ]
+        main_layout.add_widget(toolbar)
 
-        # Обернем кнопку "Назад" в AnchorLayout для позиционирования в левом верхнем углу
-        back_button_layout = MDAnchorLayout(anchor_x='left', anchor_y='top')
-        back_button_layout.add_widget(back_button)
-
-        # Создание и настройка виджета, содержащего информацию о балансе и переводе
         balance_layout = MDGridLayout(cols=1, padding=('170px', '0pd'))  # Два столбца для текста и значений
 
-        balance_value = MDLabel(text="10.00 ETH", size_hint=(None, None), size=(150, 50), valign='middle',
+        self.balance_value = MDLabel( size_hint=(None, None), size=(150, 50), valign='middle',
                                 halign='center', padding=('50pd'))
-        balance_layout.add_widget(balance_value)
+        balance_layout.add_widget(self.balance_value)
 
-        transfer_value = MDLabel(text="$100.00", size_hint=(None, None), size=(150, 50), valign='middle',
+        self.transfer_value = MDLabel( size_hint=(None, None), size=(150, 50), valign='middle',
                                  halign='center')
-        balance_layout.add_widget(transfer_value)
+        balance_layout.add_widget(self.transfer_value)
 
-        # Создание и настройка кнопки "Отправить"
-        send_button = MDFillRoundFlatButton(MDTextButton(text="Send"), size_hint=(None, None), size=(120, 60),
-                                            valign='center',
-                                            halign='center')
-
-        # Обернем кнопку "Отправить" в AnchorLayout для центрирования
-        send_button_layout = MDAnchorLayout(anchor_x='center', anchor_y='center')
-        send_button_layout.add_widget(send_button)
-
-        # Добавляем все виджеты на страницу
-        main_layout.add_widget(back_button_layout)
         main_layout.add_widget(balance_layout)
-        main_layout.add_widget(send_button_layout)
         self.add_widget(main_layout)
 
-    # Функция обработки нажатия кнопки "Назад"
-    def on_back_button_pressed(self, instance):
+
+
+
+    def on_back_button_pressed(self):
+        print("Button 'Назад' pressed")
+        sm.current = "walletcatalog"
+
+    def on_send_press(self):
         print("Button 'Назад' pressed")
 
+        layout = MDGridLayout(cols=1, padding=10)
+        layout.add_widget(self.address_textfield)
+        layout.add_widget(self.amount_textfield)
+        if not self.dialog:
+            self.dialog = MDDialog(
+                title="Private Key:",
+                type="custom",
+                content_cls=layout,
+
+                buttons=[
+                    MDFillRoundFlatButton(
+                        text="SEND", on_release=self.send_button_in_dialog
+                    ),
+                    MDFillRoundFlatButton(
+                        text="CANCEL", on_release=self.cancel_button_in_dialog
+                    ),
+                ],
+            )
+        self.dialog.update_height()
+        self.dialog.open()
+
+    def send_button_in_dialog(self, instance):
+        self.test.send_eth(current_wallet, self.address_textfield.text, self.amount_textfield.text)
+        self.dialog.dismiss()
+        self.dialog = None
+    def cancel_button_in_dialog(self, instance):
+        self.dialog.dismiss()
+        self.dialog = None
     # Обновление размеров и положения прямоугольника при изменении размера виджета
+    def on_enter(self):
+
+        global current_wallet
+        if current_wallet != "":
+            print(current_wallet, "on enter")
+            self.balance_value.text = f'{"{:.10f}".format(self.test.get_eth_balance_from_wallet(current_wallet, "https://arbitrum.drpc.org"))} ETH'
+            self.transfer_value.text = f'{"{:.10f}".format(float(self.test.get_eth_price_from_bybit()) * float(self.test.get_eth_balance_from_wallet(current_wallet, "https://arbitrum.drpc.org")))} $'
+            print(self.balance_value.text)
 
 
 class CryptoWalletApp(MDApp):
     def build(self):
         self.theme_cls.theme_style = "Dark"
         self.theme_cls.primary_palette = "Green"
-        sm = MDScreenManager()
+
         sm.add_widget(WalletsCatalog(name="walletcatalog"))
         sm.add_widget(CryptoWalletPage(name="cryptowalletpage"))
+
         sm.current = "walletcatalog"
 
         return sm
 
-
 # Запуск приложения
 if __name__ == "__main__":
     CryptoWalletApp().run()
+
+
+
+
+#############
